@@ -36,6 +36,8 @@ func handleTCPConnection(conn net.Conn) {
 	}
 
 	fmt.Println("[ ~ ] New TCP connection established.")
-	fmt.Printf("	- IP: %s\n", ip)
-	fmt.Printf("	- Hostname: %v\n", hostname)
+	fmt.Printf("  - IP: %s\n", ip)
+	fmt.Printf("  - Hostname: %v\n", hostname)
+
+	conn.Write([]byte("You have successfully connected to the TCP connection!\n"))
 }
