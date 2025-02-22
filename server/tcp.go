@@ -5,7 +5,6 @@ import (
 	"net"
 )
 
-// StartTCPServer starts a TCP server on the provided port.
 func StartTCPServer(port int) error {
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
@@ -27,6 +26,16 @@ func StartTCPServer(port int) error {
 
 func handleTCPConnection(conn net.Conn) {
 	defer conn.Close()
-	fmt.Println("[ ~ ] New TCP connection established")
-	// Handle the TCP connection here.
+	remoteAddr := conn.RemoteAddr().String()
+
+	ip, _, _ := net.SplitHostPort(remoteAddr)
+
+	hostname, err := net.LookupAddr(ip)
+	if err != nil {
+		hostname = append(hostname, "Unknown")
+	}
+
+	fmt.Println("[ ~ ] New TCP connection established.")
+	fmt.Printf("	- IP: %s\n", ip)
+	fmt.Printf("	- Hostname: %v\n", hostname)
 }
