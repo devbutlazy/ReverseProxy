@@ -1,76 +1,44 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"github.com/devbutlazy/ReverseProxy/server"
+	"io"
 	"net"
+	"net/http"
 )
 
-func startProxy(port int) {
-	address := fmt.Sprintf("0.0.0.0:%d", port)
-	listener, err := net.Listen("tcp", address)
+func getPublicIp() (string, error) {
+	url := "https://api.ipify.org"
+	resp, err := http.Get(url)
+
 	if err != nil {
-		fmt.Println("[ ! ] Error starting proxy:", err)
-		return
+		return "", fmt.Errorf("[ ! ] Failed to get public IP: %v", err)
 	}
-	defer listener.Close()
+	defer resp.Body.Close()
 
-	fmt.Println("[ ~ ] Port free. Starting proxy server...")
-	fmt.Printf("[ ✓ ] Proxy server started on %s:%d\n\n", getLocalIP(), port)
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("[ ! ] Failed to accept connection:", err)
-			continue
-		}
-
-		go handleConnection(conn)
-	}
-}
-
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-
-	clientAddr := conn.RemoteAddr().String()
-	fmt.Printf("[ + ] New connection from %s\n", clientAddr)
-
-	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		fmt.Printf("[ LOG ] %s: %s\n", clientAddr, scanner.Text())
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("[ ! ] Failed to get public IP, status code: %v", resp.Status)
 	}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Println("[ ! ] Connection error:", err)
-	}
-}
-
-func getLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
+	ip, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "Unknown"
+		return "", fmt.Errorf("[ ! ] Failed to read IP response: %v", err)
 	}
 
-	for _, addr := range addrs {
-		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil {
-				return ipNet.IP.String()
-			}
-		}
-	}
-	return "Unknown"
+	return string(ip), nil
 }
 
 func isPortAvailable(port int) bool {
-	fmt.Printf("[ ~ ] Checking port (%v) availability...\n", port)
-	address := fmt.Sprintf("0.0.0.0:%d", port)
+	fmt.Printf("[ ~ ] Checking port (%d) availability\n", port)
 
+	address := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
+		fmt.Printf("[ ERROR ] %v\n", err)
 		return false
 	}
 	defer listener.Close()
-
 	return true
 }
 
@@ -85,5 +53,13 @@ func main() {
 	if !available {
 		fmt.Println("[ ! ] Port is already in use.")
 	}
-	startProxy(port)
+
+	publicIp, err := getPublicIp()
+
+	if err != nil {
+		fmt.Printf("[ ! ] Failed to get public IP: %v\n", err)
+	}
+	fmt.Printf("[ 🗸 ] %s:%d is available\n", publicIp, port)
+
+	server.StartTCPServer(port)
 }
