@@ -7,7 +7,6 @@ A simple reverse proxy in GoLang to forward HTTP/HTTPS requests to backend servi
 - [x] Startup TCP on port (and log connections)
 - [ ] Startup a HTTP/HTTPS reverse-proxy
 - [ ] Log the len(conections) & traffic usage
-- [ ] UDP support
 - [ ] Automatic certs configuration via openssl (for HTTPS)
 - [ ] Automatic proxy link (.pac)
 
