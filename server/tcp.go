@@ -24,8 +24,12 @@ func StartTCPServer(port int) error {
 			fmt.Printf("[ ERROR ] Failed to accept TCP connection: %v\n", err)
 			continue
 		}
-		atomic.AddInt32(&activeConnections, 1)
-		fmt.Printf("[ ~ ] Active connections: %d\n", atomic.LoadInt32(&activeConnections))
+
+		newCount := atomic.AddInt32(&activeConnections, 1)
+		if newCount == 1 {
+			fmt.Printf("[ ~ ] Active connections: %d\n", newCount)
+		}
+
 		go handleTCPConnection(conn)
 	}
 }
@@ -33,8 +37,11 @@ func StartTCPServer(port int) error {
 func handleTCPConnection(conn net.Conn) {
 	defer func() {
 		conn.Close()
-		atomic.AddInt32(&activeConnections, -1)
-		fmt.Printf("[ ~ ] Active connections: %d\n", atomic.LoadInt32(&activeConnections))
+		newCount := atomic.AddInt32(&activeConnections, -1)
+
+		if newCount > 0 {
+			fmt.Printf("[ ~ ] Active connections: %d\n", newCount)
+		}
 	}()
 
 	remoteAddr := conn.RemoteAddr().String()
